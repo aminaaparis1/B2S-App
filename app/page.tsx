@@ -1,65 +1,77 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import { signIn } from "../src/services/authService"; 
+import { useRouter } from "next/navigation"; 
+import Image from "next/image"; // Si tu as le logo B2S en fichier
 
-export default function Home() {
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<{msg: string, type: 'error' | 'success' | null}>({msg: "", type: null});
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus({msg: "Connexion en cours...", type: null});
+
+    try {
+      const { profile } = await signIn(email, password);
+      
+      if (profile.must_change_password) {
+        // Redirection vers le changement de MDP (Logique Pronote)
+        router.push("/change-password");
+      } else {
+        // Redirection vers l'accueil/profil selon la maquette
+        router.push("/accueil"); 
+      }
+    } catch (err: any) {
+      setStatus({msg: "Identifiants incorrects ou erreur serveur", type: 'error'});
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 font-sans">
+      {/* Logo B2S (le cœur vert) */}
+      <div className="mb-8 flex flex-col items-center text-[#76D7B1]">
+        <div className="w-24 h-24 mb-4">
+           {/* Ici tu pourras mettre ton image de logo : <img src="/logo.png" alt="B2S Logo" /> */}
+           <div className="text-6xl text-center">💚</div> 
+        </div>
+        <h1 className="text-2xl font-bold text-gray-800">Connexion</h1>
+        <p className="text-sm text-gray-400 text-center mt-2 px-4">
+          Entrez votre email et votre mot de passe pour vous connecter.
+        </p>
+      </div>
+      
+      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
+        <input 
+          type="email" 
+          placeholder="email@domain.com" 
+          className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
+          onChange={(e) => setEmail(e.target.value)} 
+          required
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <input 
+          type="password" 
+          placeholder="mot de passe" 
+          className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
+          onChange={(e) => setPassword(e.target.value)} 
+          required
+        />
+        
+        <button 
+          type="submit" 
+          className="w-full bg-[#76D7B1] hover:bg-[#62c49f] text-white font-semibold py-4 rounded-xl shadow-sm transition-all active:scale-95"
+        >
+          Continue
+        </button>
+      </form>
+
+      {status.msg && (
+        <div className={`mt-6 p-3 rounded-lg text-sm text-center ${status.type === 'error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+          {status.msg}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
