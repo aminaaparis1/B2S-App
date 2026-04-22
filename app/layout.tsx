@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google"; 
 import "./globals.css";
-
-import BottomNav from "../src/BottomNav"; 
+import BottomNavWrapper from "../src/components/BottomNavWrapper"; // On va créer ce petit wrapper
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,14 +18,13 @@ export default function RootLayout({
   return (
     <html lang="fr" className="h-full">
       <body className={`${inter.className} h-full bg-white text-gray-900`}>
-      
         <main className="min-h-full pb-20 overflow-y-auto">
           {children}
         </main>
         
-       
-        <BottomNav />
+        {/* On utilise un wrapper qui contient la logique usePathname */}
+        <BottomNavWrapper />
       </body>
     </html>
   );
-};
+}

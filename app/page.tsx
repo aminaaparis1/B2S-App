@@ -33,9 +33,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 font-sans">
       {/* Logo B2S (le cœur vert) */}
       <div className="mb-8 flex flex-col items-center text-[#76D7B1]">
-        <div className="w-24 h-24 mb-4">
+        <div className="mb-6 flex justify-center">
            {/* Ici tu pourras mettre ton image de logo : <img src="/logo.png" alt="B2S Logo" /> */}
-           <div className="text-6xl text-center">💚</div> 
+           <Image 
+            src="/B2Slogo.png"  
+            alt="Logo B2S"
+            width={180}
+            height={180}
+            className="object-contain"
+          />
         </div>
         <h1 className="text-2xl font-bold text-gray-800">Connexion</h1>
         <p className="text-sm text-gray-400 text-center mt-2 px-4">
@@ -47,23 +53,23 @@ export default function LoginPage() {
         <input 
           type="email" 
           placeholder="email@domain.com" 
-          className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
+          className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
           onChange={(e) => setEmail(e.target.value)} 
           required
         />
         <input 
           type="password" 
           placeholder="mot de passe" 
-          className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
+          className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:border-[#76D7B1] bg-gray-50/50" 
           onChange={(e) => setPassword(e.target.value)} 
           required
         />
         
         <button 
           type="submit" 
-          className="w-full bg-[#76D7B1] hover:bg-[#62c49f] text-white font-semibold py-4 rounded-xl shadow-sm transition-all active:scale-95"
+          className="w-full bg-[#76D7B1] hover:bg-[#62c49f] text-white font-semibold py-3 rounded-xl shadow-sm transition-all active:scale-95"
         >
-          Continue
+          Se connecter
         </button>
       </form>
 

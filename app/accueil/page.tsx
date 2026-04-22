@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../src/lib/supabase";
-import { Clock, BookOpen, ChevronRight, Info, Star, Calendar as CalendarIcon } from "lucide-react";
+import { Clock, BookOpen, ChevronRight, Info, Clock3 } from "lucide-react";
 import { format, addDays, isSaturday, startOfWeek, isToday, startOfDay } from "date-fns"; 
 import { fr } from "date-fns/locale";
 
@@ -37,16 +37,18 @@ export default function AccueilPage() {
     fetchHomeData();
   }, []);
 
-  if (loading) return <div className="p-10 text-center text-[#76D7B1] font-bold">Chargement...</div>;
-
   return (
     <div className="flex min-h-screen flex-col bg-white pb-32 font-sans max-w-md mx-auto">
       
-    
+      {/* Header : Toujours visible */}
       <div className="p-8 pb-4 flex justify-between items-start">
         <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
           Bonjour, <br />
-          <span className="text-[#76D7B1]">{profile?.prenom || "Sarah"} !</span>
+          {loading ? (
+            <div className="h-9 w-32 bg-gray-100 animate-pulse rounded-lg mt-1"></div>
+          ) : (
+            <span className="text-[#76D7B1]">{profile?.prenom || "Élève"} !</span>
+          )}
         </h1>
         {isSaturday(new Date()) && (
           <div className="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full animate-bounce shadow-md">
@@ -55,7 +57,7 @@ export default function AccueilPage() {
         )}
       </div>
 
-      {/* Calendrier : Lundi -> Samedi */}
+      {/* Calendrier : Toujours visible car statique */}
       <div className="px-6 mt-4">
         <div className="flex justify-between items-center bg-gray-50 p-3 rounded-[2rem] border border-gray-100 shadow-sm">
           {calendarDays.map((date, i) => {
@@ -87,7 +89,17 @@ export default function AccueilPage() {
 
       <div className="px-8 mt-10">
         <h3 className="text-lg font-bold text-gray-800 mb-4">Prochaine séance</h3>
-        {nextSeance ? (
+        
+        {loading ? (
+          /* Skeleton pour la séance en cours de chargement */
+          <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 h-64 animate-pulse flex flex-col justify-between">
+            <div className="space-y-3">
+               <div className="h-5 w-20 bg-gray-200 rounded-full"></div>
+               <div className="h-8 w-3/4 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div className="h-12 w-full bg-gray-200 rounded-2xl"></div>
+          </div>
+        ) : nextSeance ? (
           <div className="bg-[#76D7B1] p-6 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full"></div>
             <div className="flex justify-between items-start relative z-10">
