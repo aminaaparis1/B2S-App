@@ -42,13 +42,13 @@ function AddDevoirForm() {
         description,
         date,
         eleve_id: targetEleveId, 
-        statut: 'A faire'
+        statut: 'a_faire'
       })
       .select()
       .single();
 
     if (devoirError) {
-      console.error("Erreur insertion:", devoirError);
+      console.error("Erreur insertion:", JSON.stringify(devoirError));
       setIsSubmitting(false);
       return;
     }
