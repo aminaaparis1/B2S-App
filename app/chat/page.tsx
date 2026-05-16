@@ -1,8 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link'; // ✅ Ajout de l'import pour la navigation
 import { searchContext } from "../../src/services/ai/search";
 import { ingestFolder } from "../../src/services/ai/ingestion";
-import { Send, GraduationCap, Sparkles, Loader2, Database } from "lucide-react";
+import { Send, GraduationCap, Sparkles, Loader2, Database, ArrowLeft } from "lucide-react";
 
 export default function ChatPage() {
   const [query, setQuery] = useState("");
@@ -53,7 +54,6 @@ export default function ChatPage() {
 
       for (const matiere of matieres) {
         console.log(`✨ Ingestion lancée pour : ${matiere.label}`);
-        // Appel de la méthode d'ingestion (le niveau est dynamiquement calculé par le script d'ingestion)
         await ingestFolder(`data/programmes/${matiere.folder}`, matiere.label);
       }
       
@@ -102,6 +102,15 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 pb-40 max-w-md mx-auto font-sans text-black">
+      
+      {/* ✅ BOUTON RETOUR INTÉGRÉ AU RENDU VISUEL */}
+      <Link 
+        href="/assistant" 
+        className="inline-flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest mb-6 transition-colors"
+      >
+        <ArrowLeft size={14} /> Retour
+      </Link>
+
       {/* HEADER AVEC ACTION INGESTION DB */}
       <header className="mb-8 flex justify-between items-start">
         <div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "../src/lib/supabase"; 
 
-import { Home, BookOpenText, Calendar, FolderClosed, User, Users, MessageSquareQuote } from "lucide-react";
+import { Home, BookOpenText, Calendar, FolderClosed, User, Users, Sparkles } from "lucide-react";
 
 const BottomNav = () => {
   const pathname = usePathname();
@@ -44,10 +44,9 @@ const BottomNav = () => {
 
   const centralItem = getCentralItem();
 
-  // Liste complète avec les 6 onglets
   const navItems = [
     { name: "Accueil", href: "/accueil", icon: Home },
-    { name: "Chatbot", href: "/chat", icon: MessageSquareQuote },
+    { name: "Assistant", href: "/assistant", icon: Sparkles }, 
     centralItem,
     { name: "Planning", href: "/calendrier", icon: Calendar }, 
     { name: "Outils", href: "/ressources", icon: FolderClosed },
