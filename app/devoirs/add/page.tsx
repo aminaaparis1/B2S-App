@@ -47,36 +47,78 @@ function AddDevoirForm() {
       .select()
       .single();
 
+
     if (devoirError) {
-      console.error("Erreur insertion:", JSON.stringify(devoirError));
+      console.error("❌ ERREUR SQL TABLE 'DEVOIRS' :", JSON.stringify(devoirError, null, 2));
+      alert(`Erreur création devoir: ${devoirError.message}`);
       setIsSubmitting(false);
       return;
     }
+    console.log("✅ Devoir inséré avec succès ! ID du devoir :", newDevoir.id);
 
-
-    if (file && newDevoir) {
-   
-      const fileName = `${targetEleveId}/${Date.now()}-${file.name}`;
-      const { error: storageError } = await supabase.storage
-        .from("Devoirs")
-        .upload(fileName, file);
-
-      if (!storageError) {
-        const { data: urlData } = supabase.storage.from("Devoirs").getPublicUrl(fileName);
+    // 2. Gestion ultra-précise de l'upload du fichier
+    if (newDevoir) {
+      if (!file) {
+        console.log("ℹ️ ANALYSE FICHIER : Aucun fichier sélectionné dans le formulaire. Fin propre.");
+      } else {
+        console.log("📁 ÉTAPE 2 : Début de la procédure d'upload du fichier...");
+        console.log("--> Nom d'origine :", file.name);
+        console.log("--> Taille :", (file.size / 1024).toFixed(2), "KB");
+        console.log("--> Type MIME :", file.type);
         
-        await supabase.from("fichiers").insert({
-          nom_fichier: file.name,
-          url_storage: urlData.publicUrl,
-          devoir_id: newDevoir.id,
-          uploader_id: user.id // L'ID de celui qui upload (le parent ou l'élève)
-        });
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+        const fileName = `${targetEleveId}/${Date.now()}-${cleanFileName}`;
+        console.log("--> Chemin généré pour le stockage :", fileName);
+
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from("Devoirs")
+          .upload(fileName, file);
+
+        if (storageError) {
+          console.error("❌ CRASH STORAGE SUPABASE détecté !");
+          console.error("--> Objet d'erreur brut :", JSON.stringify(storageError, null, 2));
+          
+          const errorMsg = storageError.message.toLowerCase();
+          
+          if (errorMsg.includes("bucket not found") || errorMsg.includes("does not exist")) {
+            alert("🚨 ERREUR STORAGE : Le bucket nommé 'Devoirs' n'existe pas. Vérifie l'orthographe exacte et les majuscules dans l'onglet Storage de Supabase !");
+          } else if (errorMsg.includes("policy") || errorMsg.includes("permission denied") || (storageError as any).status === 403) {
+            alert("🚨 ERREUR POLICIES (RLS) : Ton fichier est bloqué par le vigile Supabase. Tu dois aller dans Storage > Policies et ajouter une règle 'INSERT' et 'SELECT' publique ou pour les utilisateurs authentifiés.");
+          } else {
+            alert(`🚨 AUTRE ERREUR STORAGE : ${storageError.message}`);
+          }
+        } else {
+          console.log("✅ SUCCÈS STORAGE : Le fichier physique est bien monté dans le cloud !", storageData);
+          
+          const { data: urlData } = supabase.storage.from("Devoirs").getPublicUrl(fileName);
+          console.log("--> URL publique obtenue :", urlData.publicUrl);
+          
+          console.log("🔗 ÉTAPE 3 : Liaison de l'URL dans la table 'fichiers' de la BDD...");
+          const { error: fichierError } = await supabase.from("fichiers").insert({
+            nom_fichier: cleanFileName,
+            url_storage: urlData.publicUrl,
+            devoir_id: newDevoir.id,
+            uploader_id: user.id
+          });
+
+          if (fichierError) {
+            console.error("❌ ERREUR LIAISON TABLE 'FICHIERS' :", JSON.stringify(fichierError, null, 2));
+            if (fichierError.code === "42501") {
+              alert("🚨 ERREUR RLS TABLE : Le fichier est en ligne, mais les lois RLS de la TABLE 'fichiers' t'empêchent d'écrire la ligne SQL. Ajoute une policy INSERT sur cette table.");
+            } else {
+              alert(`🚨 ERREUR SQL LIAISON : ${fichierError.message}`);
+            }
+          } else {
+            console.log("🎉 TOUT EST OK : Devoir créé, fichier stocké, et liaison SQL effectuée !");
+          }
+        }
       }
     }
-
 
     router.back();
     setTimeout(() => router.refresh(), 100);
   };
+
 
   return (
     <div className="min-h-screen bg-white p-6 max-w-md mx-auto font-sans flex flex-col">

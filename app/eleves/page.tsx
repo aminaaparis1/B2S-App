@@ -70,21 +70,45 @@ export default function ElevesPage() {
       alert(`Notification envoyée pour ${eleve.profiles.prenom}`);
     }
   };
-
-  const handleExportPresences = async () => {
+const handleExportPresences = async () => {
     setExporting(true);
-    const { data: allPresences } = await supabase.from("presences").select(`date, statut, profiles (prenom, nom)`).order('date', { ascending: false });
-    if (!allPresences) return;
-    const samedisOnly = allPresences.filter(p => new Date(p.date).getDay() === 6);
+    
+    // Récupération de toutes les présences
+    const { data: allPresences } = await supabase
+      .from("presences")
+      .select(`date, statut, profiles (prenom, nom)`)
+      .order('date', { ascending: false });
+      
+    if (!allPresences) {
+      setExporting(false);
+      return;
+    }
+
+    // --- FILTRE MODIFIÉ POUR LE TEST ---
+    // On garde toutes les lignes qui ont une date valide, sans vérifier si c'est un samedi
+    const testPresences = allPresences.filter(p => {
+      return !!p.date; 
+    });
+
     const BOM = "\uFEFF";
     const csvRows = ["Date;Prénom;Nom;Statut"]; 
-    samedisOnly.forEach(p => csvRows.push(`${p.date};${p.profiles?.[0]?.prenom || ''};${p.profiles?.[0]?.nom || ''};${p.statut}`));
+    
+    testPresences.forEach((p: any) => {
+      const profileData = (Array.isArray(p.profiles) ? p.profiles : p.profiles) as any;
+      
+      const prenom = profileData?.prenom || '';
+      const nom = profileData?.nom || '';
+      
+      csvRows.push(`${p.date};${prenom};${nom};${p.statut}`);
+    });
+
     const blob = new Blob([BOM + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Export_Samedis_${today}.csv`;
+    link.download = `Export_TEST_${today}.csv`;
     link.click();
+    
     setExporting(false);
     setShowNotif(true);
     setTimeout(() => setShowNotif(false), 3000);
