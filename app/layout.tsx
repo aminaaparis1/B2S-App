@@ -8,6 +8,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "B2S - Aide aux devoirs",
   description: "Plateforme mobile d'aide aux devoirs",
+  manifest: "/manifest.json", 
+  themeColor: "#76d7b1",  
 };
 
 export default function RootLayout({
