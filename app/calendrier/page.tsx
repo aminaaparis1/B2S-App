@@ -479,6 +479,7 @@ export default function CalendrierPage() {
             </div>
 
             {/* Annonces */}
+            {isStaff && (
             <div className="px-6 mt-8">
                 <div className="flex justify-between items-center mb-3">
                     <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
@@ -578,6 +579,7 @@ export default function CalendrierPage() {
                     </div>
                 )}
             </div>
+            )}
 
             {/* ── Modal ── */}
             {showModal && selectedDate && (
@@ -833,6 +835,7 @@ export default function CalendrierPage() {
         </div>
     );
 }
+
 
 // ── Composant formulaire réutilisable ─────────────────────────────
 function FormulaireSeance({

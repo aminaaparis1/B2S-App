@@ -4,17 +4,9 @@ import path from 'path';
 // @ts-ignore
 const pdf = require('pdf-parse-fork');
 import { supabase } from '../../lib/supabase';
-import { pipeline } from '@xenova/transformers';
+import { HfInference } from '@huggingface/inference';
 
-let embedder: any = null;
-
-// Initialisation unique du modèle d'embedding (Pattern Singleton)
-const getEmbedder = async () => {
-  if (!embedder) {
-    embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-  }
-  return embedder;
-};
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 // Découpage du texte en segments (chunks) avec zone de chevauchement (overlap) pour préserver le contexte inter-chunk
 const createChunks = (text: string, chunkSize: number = 1500, overlap: number = 150) => {
@@ -27,24 +19,27 @@ const createChunks = (text: string, chunkSize: number = 1500, overlap: number = 
   return chunks;
 };
 
-// Vectorisation locale du texte via Xenova transformers
-const generateEmbedding = async (text: string) => {
-  const pipe = await getEmbedder();
-  const output = await pipe(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data) as number[];
+// Vectorisation via HuggingFace Inference API (même modèle, sans dépendance native)
+const generateEmbedding = async (text: string): Promise<number[]> => {
+  const result = await hf.featureExtraction({
+    model: 'sentence-transformers/all-MiniLM-L6-v2',
+    inputs: text,
+  });
+
+  return Array.isArray(result[0])
+    ? (result as number[][])[0]
+    : (result as number[]);
 };
 
-// 💡 ALGORITHME DE SCORING SÉMANTIQUE : Classification stricte par classe (Bannit l'étiquetage global)
+// 💡 ALGORITHME DE SCORING SÉMANTIQUE
 const attribuerNiveauStrict = (chunkText: string, fileName: string): { valide: boolean; niveau: string } => {
   const text = chunkText.toLowerCase();
   const name = fileName.toLowerCase();
 
-  // Isolation du niveau Seconde basé sur le nom du fichier ou le contenu explicite
   if (name.includes("seconde") || name.includes("_2de") || text.includes("classe de seconde")) {
     return { valide: true, niveau: "Seconde" };
   }
 
-  // Isolation du niveau 6ème (Cycle 3) avec garde-fou contre l'inclusion accidentelle des niveaux CM1/CM2
   if (name.includes("6e") || name.includes("cycle3") || name.includes("cycle-3")) {
     if ((text.includes("au cm1") || text.includes("au cm2") || text.includes("fin du cm2")) && !text.includes("en 6e") && !text.includes("sixième")) {
       return { valide: false, niveau: "" };
@@ -52,7 +47,6 @@ const attribuerNiveauStrict = (chunkText: string, fileName: string): { valide: b
     return { valide: true, niveau: "6ème" };
   }
 
-  // Système de pondération lexicale pour distribuer individuellement les chunks des fichiers transversaux (5e/4e/3e)
   let score5e = 0;
   let score4e = 0;
   let score3e = 0;
@@ -66,12 +60,10 @@ const attribuerNiveauStrict = (chunkText: string, fileName: string): { valide: b
   if (text.includes("troisième") || text.includes("3ème") || text.includes("3e ")) score3e += 4;
   if (text.includes("classe de 3") || text.includes("brevet") || text.includes("dnb") || text.includes("fin de 3")) score3e += 2;
 
-  // Élection du niveau majoritaire ayant la plus forte densité sémantique
   if (score5e > score4e && score5e > score3e) return { valide: true, niveau: "5ème" };
   if (score4e > score5e && score4e > score3e) return { valide: true, niveau: "4ème" };
   if (score3e > score5e && score3e > score4e) return { valide: true, niveau: "3ème" };
 
-  // Stratégie de repli sur métadonnées de fichier en cas d'égalité parfaite ou de préambule général
   if (name.includes("3eme") || name.includes("3e")) return { valide: true, niveau: "3ème" };
   if (name.includes("4eme") || name.includes("4e")) return { valide: true, niveau: "4ème" };
   if (name.includes("5eme") || name.includes("5e")) return { valide: true, niveau: "5ème" };
@@ -79,7 +71,7 @@ const attribuerNiveauStrict = (chunkText: string, fileName: string): { valide: b
   return { valide: true, niveau: "Général" };
 };
 
-// 💡 CLOISONNEMENT INTERDISCIPLINAIRE : Filtres sémantiques thématiques pour éviter la contamination croisée en BDD
+// 💡 CLOISONNEMENT INTERDISCIPLINAIRE
 const pageConcerneMatiere = (pageText: string, matiere: string): boolean => {
   const text = pageText.toLowerCase();
   
@@ -114,7 +106,7 @@ const pageConcerneMatiere = (pageText: string, matiere: string): boolean => {
   }
 };
 
-// Orchestration du pipeline de lecture, filtrage, découpage, vectorisation et stockage
+// Orchestration du pipeline
 export const ingestFolder = async (folderPath: string, matiere: string) => {
   console.log(`🚀 INGESTION SÉLECTIVE ET TRUNCATE-SAFE POUR : ${matiere}`);
   
@@ -131,7 +123,6 @@ export const ingestFolder = async (folderPath: string, matiere: string) => {
       const filePath = path.join(absolutePath, file);
       const dataBuffer = fs.readFileSync(filePath);
       
-      // Extraction des pages du PDF avec injection de balises de fin de page [PAGE_BREAK]
       const data = await pdf(dataBuffer, {
         pagerender: function(pageData: any) {
           return pageData.getTextContent().then(function(textContent: any) {
@@ -146,24 +137,22 @@ export const ingestFolder = async (folderPath: string, matiere: string) => {
       for (let i = 0; i < pages.length; i++) {
         const rawPageText = pages[i];
 
-        // Étape 1 : Validation de l'étanchéité de la discipline
         if (!pageConcerneMatiere(rawPageText, matiere)) continue;
 
         const cleanPageText = rawPageText.replace(/\s+/g, ' ').trim();
         if (!cleanPageText) continue;
 
-        // Étape 2 : Segmentation de la page validée en fragments
         const chunks = createChunks(cleanPageText);
 
         for (const chunk of chunks) {
-          // Étape 3 : Classification fine et dynamique au niveau du chunk individuel
           const analyseNiveau = attribuerNiveauStrict(chunk, file);
           if (!analyseNiveau.valide) continue;
 
-          // Étape 4 : Vectorisation contextuelle
+          // ⚠️ Petite pause pour éviter le rate limit HuggingFace sur le tier gratuit
+          await new Promise(resolve => setTimeout(resolve, 100));
+
           const embedding = await generateEmbedding(chunk);
           
-          // Étape 5 : Persistance et indexation vectorielle sous Supabase
           const { error } = await supabase.from('documents_pedagogiques').insert({
             content: chunk,
             embedding: embedding,

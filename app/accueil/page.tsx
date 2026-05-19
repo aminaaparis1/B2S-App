@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../src/lib/supabase";
-import { Clock, BookOpen, ChevronRight, Info, CalendarCheck, Users } from "lucide-react";
+import { Clock, BookOpen, ChevronRight, Info, CalendarCheck, Users, Megaphone,X } from "lucide-react";
 import { format, addDays, isSaturday, startOfWeek, isToday, startOfDay } from "date-fns"; 
 import { fr } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,8 @@ export default function AccueilPage() {
   const [nextSeance, setNextSeance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [annonces, setAnnonces] = useState<any[]>([]);
+  const [annonceSelectionnee, setAnnonceSelectionnee] = useState<any | null>(null);
 
   const startOfOurWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
   const calendarDays = Array.from({ length: 6 }).map((_, i) => addDays(startOfOurWeek, i));
@@ -38,6 +40,12 @@ export default function AccueilPage() {
 
       if (seances) setNextSeance(seances);
       setLoading(false);
+      const { data: annoncesData } = await supabase
+  .from("annonces")
+  .select("*, profiles(prenom, nom)")
+  .order("created_at", { ascending: false })
+  .limit(3); // Juste les 3 dernières pour l'accueil
+setAnnonces(annoncesData || []);
     }
     fetchHomeData();
   }, []);
@@ -163,6 +171,65 @@ export default function AccueilPage() {
           </button>
         </div>
       )}
+      {/* Annonces */}
+{!loading && annonces.length > 0 && (
+  <div className="px-8 mt-8">
+    <div className="flex justify-between items-end mb-4">
+      <h3 className="text-lg font-black text-gray-800 uppercase italic flex items-center gap-2">
+        <Megaphone className="w-5 h-5 text-[#76D7B1]" />
+        Annonces
+      </h3>
+    </div>
+
+    <div className="space-y-3">
+      {annonces.map((annonce) => (
+        <button
+          key={annonce.id}
+          onClick={() => setAnnonceSelectionnee(annonce)}
+          className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-5 text-left active:scale-95 transition-all"
+        >
+          <p className="font-black text-gray-900 text-base">{annonce.titre}</p>
+          <p className="text-gray-600 text-sm mt-1.5 leading-relaxed line-clamp-2">{annonce.contenu}</p>
+          <p className="text-[10px] text-gray-300 font-bold mt-3 uppercase tracking-wider">
+            {annonce.profiles?.prenom} · {format(new Date(annonce.created_at), "d MMM yyyy", { locale: fr })}
+          </p>
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* Modal détail annonce */}
+{annonceSelectionnee && (
+  <div className="fixed inset-0 z-[110] flex items-end justify-center">
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setAnnonceSelectionnee(null)}
+    />
+    <div className="relative z-10 w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl max-h-[80vh] overflow-y-auto">
+      <div className="flex justify-between items-start mb-5">
+        <div className="flex-1 pr-4">
+          <div className="w-10 h-1 bg-gray-200 rounded-full mb-4" />
+          <div className="flex items-center gap-2 mb-1">
+            <Megaphone className="w-4 h-4 text-[#76D7B1]" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#76D7B1]">Annonce</p>
+          </div>
+          <h3 className="text-2xl font-black text-gray-900">{annonceSelectionnee.titre}</h3>
+        </div>
+        <button
+          onClick={() => setAnnonceSelectionnee(null)}
+          className="p-2 bg-gray-100 rounded-full active:scale-90 transition-all mt-4 shrink-0"
+        >
+          <X className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
+      <p className="text-gray-700 text-sm leading-relaxed mb-4">{annonceSelectionnee.contenu}</p>
+      <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wider">
+        {annonceSelectionnee.profiles?.prenom} · {format(new Date(annonceSelectionnee.created_at), "d MMMM yyyy", { locale: fr })}
+      </p>
+    </div>
+  </div>
+)}
     </div>
   );
 }
