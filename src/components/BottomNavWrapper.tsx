@@ -12,7 +12,6 @@ export default function BottomNavWrapper({ children }: { children: React.ReactNo
 
   return (
     <>
-      {/* Configuration PWA globale injectée dans le Head invisible du site */}
       <Head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#76D7B1" />
@@ -22,12 +21,11 @@ export default function BottomNavWrapper({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/appstore-images/ios/180.png" />
       </Head>
 
-      {/* Rendu de l'application */}
       <div className="min-h-screen bg-white">
-        {/* Affichage du contenu de la page actuelle */}
+        {/* Contenu de tes pages (Assistant, etc.) */}
         <main>{children}</main>
 
-        {/* La barre de navigation ne s'affiche que si on n'est pas sur une page d'authentification */}
+        {/* Menu visible uniquement hors connexion */}
         {!shouldHideNav && <BottomNav />}
       </div>
     </>
