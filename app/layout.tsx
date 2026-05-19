@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google"; 
 import "./globals.css";
-import BottomNavWrapper from "../src/components/BottomNavWrapper"; // On va créer ce petit wrapper
+import BottomNavWrapper from "../src/components/BottomNavWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "B2S - Aide aux devoirs",
   description: "Plateforme mobile d'aide aux devoirs",
-  manifest: "/manifest.json", 
-  themeColor: "#76d7b1",  
+  manifest: "/manifest.json",
+  themeColor: "#76d7b1",
 };
 
 export default function RootLayout({
@@ -23,9 +23,16 @@ export default function RootLayout({
         <main className="min-h-full pb-20 overflow-y-auto">
           {children}
         </main>
-        
-        {/* On utilise un wrapper qui contient la logique usePathname */}
         <BottomNavWrapper />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js');
+              });
+            }
+          `
+        }} />
       </body>
     </html>
   );
