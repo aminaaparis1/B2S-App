@@ -1,0 +1,39 @@
+{
+  "background_color": "#ffffff",
+  "description": "Plateforme mobile d'aide aux devoirs et de gestion pour l'association B2S.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "B2S App",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "b2s.vercel",
+  "start_url": "/",
+  "theme_color": "#76d7b1",
+  "icons": [
+    {
+      "src": "https://b2s.vercel.app/favicon.ico?favicon.0b3bf435.ico",
+      "type": "image/x-icon",
+      "sizes": "256x256",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 256,
+      "is512x512": false,
+      "is256x256": true,
+      "is192x192": false
+    },
+    {
+      "src": "https://b2s.vercel.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ]
+}
