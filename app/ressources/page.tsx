@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../../src/lib/supabase";
-import { Download, Plus, FileText, Loader2, X, UploadCloud } from "lucide-react";
+import { Download, Plus, FileText, Loader2, X, UploadCloud, Trash2 } from "lucide-react";
 
 export default function RessourcesPage() {
   const [files, setFiles] = useState<any[]>([]);
@@ -9,9 +9,10 @@ export default function RessourcesPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // États pour le formulaire d'ajout
+  // États pour le formulaire d'ajout et suppression
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadCategory, setUploadCategory] = useState("General"); // Par défaut avec accent
 
@@ -50,36 +51,35 @@ export default function RessourcesPage() {
     setLoading(false);
   }
 
- const handleUpload = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!selectedFile) return;
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
 
-  setUploading(true);
+    setUploading(true);
 
+    const cleanName = selectedFile.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") 
+      .replace(/\s+/g, "-")         
+      .replace(/[^a-zA-Z0-9.-]/g, ""); 
 
-  const cleanName = selectedFile.name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") 
-    .replace(/\s+/g, "-")         
-    .replace(/[^a-zA-Z0-9.-]/g, ""); 
+    const filePath = `${uploadCategory}/${cleanName}`;
 
-  const filePath = `${uploadCategory}/${cleanName}`;
+    const { error } = await supabase.storage
+      .from("Ressources")
+      .upload(filePath, selectedFile, { upsert: true });
 
-  const { error } = await supabase.storage
-    .from("Ressources")
-    .upload(filePath, selectedFile, { upsert: true });
+    if (!error) {
+      setIsModalOpen(false);
+      setSelectedFile(null);
+      if (uploadCategory === category) fetchRessources();
+      else setCategory(uploadCategory);
+    } else {
+      alert("Erreur lors de l'envoi : " + error.message);
+    }
+    setUploading(false);
+  };
 
-  if (!error) {
-    setIsModalOpen(false);
-    setSelectedFile(null);
-    if (uploadCategory === category) fetchRessources();
-    else setCategory(uploadCategory);
-  } else {
-
-    alert("Erreur lors de l'envoi : " + error.message);
-  }
-  setUploading(false);
-};
   const handleDownload = async (fileName: string) => {
     const { data } = await supabase.storage
       .from("Ressources")
@@ -91,6 +91,22 @@ export default function RessourcesPage() {
       link.download = fileName;
       link.click();
     }
+  };
+
+  const handleDelete = async (fileName: string) => {
+    if (!confirm(`Voulez-vous vraiment supprimer le fichier "${fileName}" ?`)) return;
+
+    setDeletingFile(fileName);
+    const { error } = await supabase.storage
+      .from("Ressources")
+      .remove([`${category}/${fileName}`]);
+
+    if (!error) {
+      setFiles((prev) => prev.filter((f) => f.name !== fileName));
+    } else {
+      alert("Erreur lors de la suppression : " + error.message);
+    }
+    setDeletingFile(null);
   };
 
   return (
@@ -118,7 +134,7 @@ export default function RessourcesPage() {
         {isAdmin && (
           <button 
             onClick={() => {
-                setUploadCategory(category); // Ouvre le modal sur la catégorie active
+                setUploadCategory(category); 
                 setIsModalOpen(true);
             }}
             className="bg-black text-white p-3 rounded-2xl active:scale-90 transition-all shadow-lg shadow-black/20"
@@ -135,15 +151,32 @@ export default function RessourcesPage() {
         ) : files.length > 0 ? (
           files.map((file) => (
             <div key={file.id} className="flex items-center justify-between p-4 border-2 border-gray-50 rounded-[2rem] bg-white shadow-sm">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="bg-[#F0FAF6] p-2 rounded-xl">
+              <div className="flex items-center gap-3 overflow-hidden flex-grow mr-2">
+                <div className="bg-[#F0FAF6] p-2 rounded-xl flex-shrink-0">
                     <FileText className="w-5 h-5 text-[#76D7B1]" />
                 </div>
                 <p className="text-xs font-bold text-gray-800 truncate">{file.name}</p>
               </div>
-              <button onClick={() => handleDownload(file.name)} className="text-gray-300 hover:text-black p-2 transition-colors">
-                <Download className="w-5 h-5" />
-              </button>
+              
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => handleDownload(file.name)} className="text-gray-300 hover:text-black p-2 transition-colors">
+                  <Download className="w-5 h-5" />
+                </button>
+                
+                {isAdmin && (
+                  <button 
+                    onClick={() => handleDelete(file.name)} 
+                    disabled={deletingFile === file.name}
+                    className="text-gray-300 hover:text-red-500 p-2 transition-colors disabled:opacity-40"
+                  >
+                    {deletingFile === file.name ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           ))
         ) : (
