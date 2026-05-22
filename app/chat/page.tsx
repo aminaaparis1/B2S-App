@@ -1,25 +1,49 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link'; // ✅ Ajout de l'import pour la navigation
+import Link from 'next/link';
 import { searchContext } from "../../src/services/ai/search";
 import { ingestFolder } from "../../src/services/ai/ingestion";
-import { Send, GraduationCap, Sparkles, Loader2, Database, ArrowLeft } from "lucide-react";
+import { Send, Sparkles, Loader2, Database, ArrowLeft } from "lucide-react";
+import { supabase } from "../../src/lib/supabase";
 
 export default function ChatPage() {
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
+    {
+      role: 'ai',
+      content: `Bonjour 👋 ! Je suis l'assistant de l'association Besoin 2 Solidarité (B2S).\n\nJe suis là pour t'aider sur deux sujets :\n• 📚 Tes cours : maths, français, histoire-géo, SVT, physique-chimie, langues... de la 6e à la Seconde\n• 🤝 L'association B2S : tarifs, horaires, contact, nos missions\n\nPose-moi ta question, je suis là pour toi !`
+    }
+  ]);
   const [loading, setLoading] = useState(false);
   const [isIngesting, setIsIngesting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll automatique vers le bas de la discussion à chaque nouveau message
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, loading]);
 
-  // Détection lexicale de la matière pour optimiser les performances de filtrage de la BDD
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+        
+      if (profile?.role?.toLowerCase() === "admin") {
+        setIsAdmin(true);
+      }
+    };
+    checkAdmin();
+  }, []);
+
   const detectMatiere = (text: string): string | null => {
     const lower = text.toLowerCase();
+    if (lower.includes("tarif") || lower.includes("prix") || lower.includes("association") || lower.includes("b2s") || lower.includes("maraude") || lower.includes("soutien scolaire") || lower.includes("bureau") || lower.includes("contact")) return "Association";
     if (lower.includes("math")) return "Mathématiques";
     if (lower.includes("francais") || lower.includes("français") || lower.includes("objet d'etude") || lower.includes("objets d'étude")) return "Français";
     if (lower.includes("espagnol")) return "Espagnol (LV1/LV2)";
@@ -33,7 +57,6 @@ export default function ChatPage() {
     return null;
   };
 
-  // Traitement séquentiel de l'ingestion globale de l'arborescence locale
   const handleIngest = async () => {
     setIsIngesting(true);
     try {
@@ -50,23 +73,17 @@ export default function ChatPage() {
         { folder: "allemand", label: "Allemand (LV1/LV2)" }
       ];
 
-      console.log("🚀 Lancement de l'ingestion globale de la base B2S...");
-
       for (const matiere of matieres) {
-        console.log(`✨ Ingestion lancée pour : ${matiere.label}`);
         await ingestFolder(`data/programmes/${matiere.folder}`, matiere.label);
       }
-      
-      alert("Toutes les matières ont été filtrées, triées par niveau (hors CM1/CM2) et synchronisées ! 🎓✅");
+      alert("Toutes les matières ont été synchronisées ! 🎓✅");
     } catch (error: any) {
-      console.error("Erreur d'ingestion :", error);
       alert("Erreur d'ingestion : " + error.message);
     } finally {
       setIsIngesting(false);
     }
   };
 
-  // Gestion de la soumission de la requête élève et de l'orchestration RAG
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || loading) return;
@@ -78,12 +95,9 @@ export default function ChatPage() {
 
     try {
       const matiereDetectee = detectMatiere(userMessage);
-
-      // Récupération des 12 chunks les plus pertinents associés au filtre de matière identifié
       const contextDocs = await searchContext(userMessage, 12, matiereDetectee);
       const contextText = contextDocs.map((d: any) => d.content).join("\n---\n");
 
-      // Envoi du package (Question + Contexte RAG) au modèle LLM (Groq API)
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +107,6 @@ export default function ChatPage() {
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'ai', content: data.text }]);
     } catch (error) {
-      console.error(error);
       setMessages(prev => [...prev, { role: 'ai', content: "Désolé, une erreur est survenue." }]);
     } finally {
       setLoading(false);
@@ -103,7 +116,6 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-white p-6 pb-40 max-w-md mx-auto font-sans text-black">
       
-      {/* ✅ BOUTON RETOUR INTÉGRÉ AU RENDU VISUEL */}
       <Link 
         href="/assistant" 
         className="inline-flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest mb-6 transition-colors"
@@ -111,7 +123,6 @@ export default function ChatPage() {
         <ArrowLeft size={14} /> Retour
       </Link>
 
-      {/* HEADER AVEC ACTION INGESTION DB */}
       <header className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Assistant</h1>
@@ -119,27 +130,18 @@ export default function ChatPage() {
             <Sparkles size={10} /> Intelligence B2S
           </p>
         </div>
-        <button 
-          onClick={handleIngest} 
-          disabled={isIngesting}
-          className="bg-gray-50 p-4 rounded-2xl border border-gray-100 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
-        >
-          {isIngesting ? <Loader2 className="w-5 h-5 animate-spin text-gray-400" /> : <Database className="w-5 h-5 text-black" />}
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={handleIngest} 
+            disabled={isIngesting}
+            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+          >
+            {isIngesting ? <Loader2 className="w-5 h-5 animate-spin text-gray-400" /> : <Database className="w-5 h-5 text-black" />}
+          </button>
+        )}
       </header>
 
-      {/* FIL DE DISCUSSION */}
       <div ref={scrollRef} className="space-y-6 overflow-y-auto max-h-[60vh] pr-2 pb-4 scroll-smooth">
-        {messages.length === 0 && (
-          <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 text-center">
-            <div className="w-16 h-16 bg-[#C2F3E1] rounded-full flex items-center justify-center mx-auto mb-4">
-              <GraduationCap className="text-[#76D7B1] w-8 h-8" />
-            </div>
-            <p className="text-sm font-black uppercase italic tracking-tighter">Pose ta question</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Toutes matières • 6e à Seconde</p>
-          </div>
-        )}
-
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[90%] p-5 rounded-[2rem] shadow-sm border ${
@@ -164,7 +166,6 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* FORMULAIRE DE CHAT FIXED INTERFACE */}
       <footer className="fixed bottom-24 left-0 right-0 p-6 bg-white/90 backdrop-blur-md max-w-md mx-auto z-50">
         <form onSubmit={handleSearch} className="relative flex items-center">
           <input

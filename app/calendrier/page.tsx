@@ -350,14 +350,17 @@ export default function CalendrierPage() {
         <div className="min-h-screen bg-white pb-32 max-w-md mx-auto font-sans">
 
             {/* Header */}
-            <div className="px-6 pt-8 pb-2">
-                <h1 className="text-3xl font-black text-gray-900">Calendrier</h1>
-                <p className="text-gray-400 text-sm mt-1 font-medium">
-                    {isStaff
-                        ? groupe ? `Groupe ${groupe} · 1 samedi sur 2` : "Groupe non défini"
-                        : "Tous les samedis hors vacances"}
-                </p>
-            </div>
+            {/* Header */}
+<div className="px-6 pt-8 pb-2">
+    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-gray-900">
+        Calendrier
+    </h1>
+    <p className="text-gray-400 text-sm mt-1 font-medium">
+        {isStaff
+            ? groupe ? `Groupe ${groupe} · 1 samedi sur 2` : "Groupe non défini"
+            : "Tous les samedis hors vacances"}
+    </p>
+</div>
 
             {/* Calendrier */}
             <div className="mx-6 mt-4 bg-gray-50 rounded-[2rem] p-4 border border-gray-100">
