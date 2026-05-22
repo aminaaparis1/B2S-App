@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../src/lib/supabase";
-import { Clock, BookOpen, ChevronRight, Info, CalendarCheck, Users, Megaphone,X } from "lucide-react";
-import { format, addDays, isSaturday, startOfWeek, isToday, startOfDay } from "date-fns"; 
+import { Clock, BookOpen, ChevronRight, Info, CalendarCheck, Users, Megaphone, X } from "lucide-react";
+import { format, addDays, isSaturday, startOfWeek, isToday, startOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 
@@ -33,26 +33,26 @@ export default function AccueilPage() {
       const { data: seances } = await supabase
         .from("seances")
         .select("*")
-        .gte("date_debut", todayStart) 
-        .order("date_debut", { ascending: true }) 
+        .gte("date_debut", todayStart)
+        .order("date_debut", { ascending: true })
         .limit(1)
         .maybeSingle();
 
       if (seances) setNextSeance(seances);
       setLoading(false);
       const { data: annoncesData } = await supabase
-  .from("annonces")
-  .select("*, profiles(prenom, nom)")
-  .order("created_at", { ascending: false })
-  .limit(3); // Juste les 3 dernières pour l'accueil
-setAnnonces(annoncesData || []);
+        .from("annonces")
+        .select("*, profiles(prenom, nom)")
+        .order("created_at", { ascending: false })
+        .limit(3); // Juste les 3 dernières pour l'accueil
+      setAnnonces(annoncesData || []);
     }
     fetchHomeData();
   }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-white pb-32 font-sans max-w-md mx-auto">
-      
+
       <div className="p-8 pb-4 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-black text-gray-900 leading-tight uppercase italic">
@@ -77,46 +77,49 @@ setAnnonces(annoncesData || []);
       </div>
 
       <div className="px-6 mt-4">
-        <div className="flex justify-between items-center bg-gray-50 p-3 rounded-[2.5rem] border border-gray-100 shadow-inner">
-          {calendarDays.map((date, i) => {
-            const isDaySaturday = isSaturday(date);
-            const isDayToday = isToday(date);
+        <button
+          onClick={() => router.push('/calendrier')}
+          className="w-full"
+        >
+          <div className="flex justify-between items-center bg-gray-50 p-3 rounded-[2.5rem] border border-gray-100 shadow-inner">
+            {calendarDays.map((date, i) => {
+              const isDaySaturday = isSaturday(date);
+              const isDayToday = isToday(date);
 
-            return (
-              <div 
-                key={i} 
-                className={`flex flex-col items-center p-2 rounded-2xl w-11 transition-all ${
-                  isDaySaturday 
-                    ? 'bg-red-500 text-white shadow-lg scale-110 z-10' 
-                    : isDayToday 
-                      ? 'bg-[#76D7B1] text-white shadow-md' 
+              return (
+                <div
+                  key={i}
+                  className={`flex flex-col items-center p-2 rounded-2xl w-11 transition-all ${isDaySaturday
+                    ? 'bg-red-500 text-white shadow-lg scale-110 z-10'
+                    : isDayToday
+                      ? 'bg-[#76D7B1] text-white shadow-md'
                       : 'text-gray-400'
-                }`}
-              >
-                <span className="text-[9px] font-black uppercase mb-1">
-                  {format(date, "eee", { locale: fr }).replace('.', '')}
-                </span>
-                <span className="text-base font-black">
-                  {format(date, "d")}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                    }`}
+                >
+                  <span className="text-[9px] font-black uppercase mb-1">
+                    {format(date, "eee", { locale: fr }).replace('.', '')}
+                  </span>
+                  <span className="text-base font-black">
+                    {format(date, "d")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </button>
       </div>
 
       <div className="px-8 mt-10">
         <div className="flex justify-between items-end mb-4">
           <h3 className="text-lg font-black text-gray-800 uppercase italic">Prochaine séance</h3>
-          <span className="text-[10px] font-bold text-[#76D7B1] uppercase">Voir tout</span>
         </div>
-        
+
         {loading ? (
           <div className="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 h-64 animate-pulse"></div>
         ) : nextSeance ? (
           <div className="bg-[#76D7B1] p-7 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full"></div>
-            
+
             <div className="flex justify-between items-start relative z-10">
               <div>
                 <span className="bg-white/20 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
@@ -137,7 +140,7 @@ setAnnonces(annoncesData || []);
               </p>
             </div>
 
-            <button 
+            <button
               onClick={() => router.push('/seances')}
               className="w-full mt-8 bg-white text-[#76D7B1] py-4 rounded-2xl font-black uppercase italic text-xs flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg"
             >
@@ -154,7 +157,7 @@ setAnnonces(annoncesData || []);
 
       {!loading && profile?.role === "Benevole" && (
         <div className="px-8 mt-6">
-          <button 
+          <button
             onClick={() => router.push('/eleves')}
             className="w-full bg-black text-white p-5 rounded-[2rem] flex items-center justify-between group active:scale-95 transition-all"
           >
@@ -172,64 +175,64 @@ setAnnonces(annoncesData || []);
         </div>
       )}
       {/* Annonces */}
-{!loading && annonces.length > 0 && (
-  <div className="px-8 mt-8">
-    <div className="flex justify-between items-end mb-4">
-      <h3 className="text-lg font-black text-gray-800 uppercase italic flex items-center gap-2">
-        <Megaphone className="w-5 h-5 text-[#76D7B1]" />
-        Annonces
-      </h3>
-    </div>
-
-    <div className="space-y-3">
-      {annonces.map((annonce) => (
-        <button
-          key={annonce.id}
-          onClick={() => setAnnonceSelectionnee(annonce)}
-          className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-5 text-left active:scale-95 transition-all"
-        >
-          <p className="font-black text-gray-900 text-base">{annonce.titre}</p>
-          <p className="text-gray-600 text-sm mt-1.5 leading-relaxed line-clamp-2">{annonce.contenu}</p>
-          <p className="text-[10px] text-gray-300 font-bold mt-3 uppercase tracking-wider">
-            {annonce.profiles?.prenom} · {format(new Date(annonce.created_at), "d MMM yyyy", { locale: fr })}
-          </p>
-        </button>
-      ))}
-    </div>
-  </div>
-)}
-
-{/* Modal détail annonce */}
-{annonceSelectionnee && (
-  <div className="fixed inset-0 z-[110] flex items-end justify-center">
-    <div
-      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-      onClick={() => setAnnonceSelectionnee(null)}
-    />
-    <div className="relative z-10 w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl max-h-[80vh] overflow-y-auto">
-      <div className="flex justify-between items-start mb-5">
-        <div className="flex-1 pr-4">
-          <div className="w-10 h-1 bg-gray-200 rounded-full mb-4" />
-          <div className="flex items-center gap-2 mb-1">
-            <Megaphone className="w-4 h-4 text-[#76D7B1]" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#76D7B1]">Annonce</p>
+      {!loading && annonces.length > 0 && (
+        <div className="px-8 mt-8">
+          <div className="flex justify-between items-end mb-4">
+            <h3 className="text-lg font-black text-gray-800 uppercase italic flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-[#76D7B1]" />
+              Annonces
+            </h3>
           </div>
-          <h3 className="text-2xl font-black text-gray-900">{annonceSelectionnee.titre}</h3>
+
+          <div className="space-y-3">
+            {annonces.map((annonce) => (
+              <button
+                key={annonce.id}
+                onClick={() => setAnnonceSelectionnee(annonce)}
+                className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-5 text-left active:scale-95 transition-all"
+              >
+                <p className="font-black text-gray-900 text-base">{annonce.titre}</p>
+                <p className="text-gray-600 text-sm mt-1.5 leading-relaxed line-clamp-2">{annonce.contenu}</p>
+                <p className="text-[10px] text-gray-300 font-bold mt-3 uppercase tracking-wider">
+                  {annonce.profiles?.prenom} · {format(new Date(annonce.created_at), "d MMM yyyy", { locale: fr })}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
-        <button
-          onClick={() => setAnnonceSelectionnee(null)}
-          className="p-2 bg-gray-100 rounded-full active:scale-90 transition-all mt-4 shrink-0"
-        >
-          <X className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
-      <p className="text-gray-700 text-sm leading-relaxed mb-4">{annonceSelectionnee.contenu}</p>
-      <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wider">
-        {annonceSelectionnee.profiles?.prenom} · {format(new Date(annonceSelectionnee.created_at), "d MMMM yyyy", { locale: fr })}
-      </p>
-    </div>
-  </div>
-)}
+      )}
+
+      {/* Modal détail annonce */}
+      {annonceSelectionnee && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setAnnonceSelectionnee(null)}
+          />
+          <div className="relative z-10 w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-5">
+              <div className="flex-1 pr-4">
+                <div className="w-10 h-1 bg-gray-200 rounded-full mb-4" />
+                <div className="flex items-center gap-2 mb-1">
+                  <Megaphone className="w-4 h-4 text-[#76D7B1]" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#76D7B1]">Annonce</p>
+                </div>
+                <h3 className="text-2xl font-black text-gray-900">{annonceSelectionnee.titre}</h3>
+              </div>
+              <button
+                onClick={() => setAnnonceSelectionnee(null)}
+                className="p-2 bg-gray-100 rounded-full active:scale-90 transition-all mt-4 shrink-0"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            <p className="text-gray-700 text-sm leading-relaxed mb-4">{annonceSelectionnee.contenu}</p>
+            <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wider">
+              {annonceSelectionnee.profiles?.prenom} · {format(new Date(annonceSelectionnee.created_at), "d MMMM yyyy", { locale: fr })}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { searchContext } from '../../src/services/ai/search';
 import { NIVEAUX_MATIERES_CHAPITRES } from './data';
-import { 
+import {
   Loader2, Sparkles, CheckCircle2, XCircle, Award, ArrowLeft,
   ChevronDown, Book, Calculator, Compass, HeartPulse, Atom, BarChart3, Binary
 } from 'lucide-react';
@@ -58,33 +58,33 @@ export default function ExercicesPage() {
 
   // Effet 1 : Sécurise la matière sélectionnée si le niveau change
   // Effet 1 : ajuste la matière quand le niveau change
-useEffect(() => {
-  const disponibles = Object.keys(
-    NIVEAUX_MATIERES_CHAPITRES[niveau] || {}
-  );
+  useEffect(() => {
+    const disponibles = Object.keys(
+      NIVEAUX_MATIERES_CHAPITRES[niveau] || {}
+    );
 
-  if (disponibles.length === 0) return;
+    if (disponibles.length === 0) return;
 
-  if (!disponibles.includes(matiere)) {
-    setMatiere(disponibles[0]); 
-  }
-}, [niveau]); 
+    if (!disponibles.includes(matiere)) {
+      setMatiere(disponibles[0]);
+    }
+  }, [niveau]);
 
 
-// Effet 2 : ajuste le chapitre quand niveau ou matière change
-useEffect(() => {
-  const chapitresDisponibles =
-    NIVEAUX_MATIERES_CHAPITRES[niveau]?.[matiere] || [];
+  // Effet 2 : ajuste le chapitre quand niveau ou matière change
+  useEffect(() => {
+    const chapitresDisponibles =
+      NIVEAUX_MATIERES_CHAPITRES[niveau]?.[matiere] || [];
 
-  if (chapitresDisponibles.length === 0) {
-    setChapitre("");
-    return;
-  }
+    if (chapitresDisponibles.length === 0) {
+      setChapitre("");
+      return;
+    }
 
-  if (!chapitresDisponibles.includes(chapitre)) {
-    setChapitre(chapitresDisponibles[0]); 
-  }
-}, [niveau, matiere]); 
+    if (!chapitresDisponibles.includes(chapitre)) {
+      setChapitre(chapitresDisponibles[0]);
+    }
+  }, [niveau, matiere]);
 
   const handleGenerate = async () => {
     if (!chapitre) return alert("Sélectionne un chapitre valide !");
@@ -108,8 +108,8 @@ useEffect(() => {
 
       const searchTerms = `cours notions exercices formules definitions calculs ${chapitre} ${matiereNettoyee} ${niveau}`;
       const contextDocs = await searchContext(searchTerms, 6, matiereNettoyee);
-      
-      const contextText = contextDocs.length > 0 
+
+      const contextText = contextDocs.length > 0
         ? contextDocs.map((d: any) => d.content).join("\n---\n")
         : `Cours complet et exercices pratiques d'application sur le thème : ${chapitre}, niveau classe de ${niveau}.`;
 
@@ -140,6 +140,11 @@ useEffect(() => {
     const noteCalcul = Math.round((totalCorrects / quiz.questions.length) * 20);
     setNoteFinale(noteCalcul);
     setValidationRendue(true);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   const CurrentMatiereIcon = MATIERES_ICONS[matiere] || Book;
@@ -164,10 +169,10 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-white p-6 pb-24 max-w-md mx-auto font-sans text-black flex flex-col">
-      
+
       {/* BOUTON RETOUR HUB AVEC TRADUCTION CONTEXTUELLE */}
-      <Link 
-        href="/assistant" 
+      <Link
+        href="/assistant"
         className="inline-flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest mb-6 transition-colors"
       >
         <ArrowLeft size={14} /> {isEnglish ? "Back" : isSpanish ? "Volver" : isGerman ? "Zurück" : "Retour"}
@@ -186,7 +191,7 @@ useEffect(() => {
       {/* CONFIGURATEUR DE FILTRES INTERACTIFS */}
       {!quiz && !loading && (
         <div className="space-y-5 animate-fade-in">
-          
+
           {/* 1. SELECTION DU NIVEAU (CHIPS STYLE) */}
           <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
             <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-3">1. Choix du Niveau</label>
@@ -198,11 +203,10 @@ useEffect(() => {
                     key={n}
                     type="button"
                     onClick={() => { setNiveau(n); setOpenMatiere(false); setOpenChapitre(false); }}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all ${
-                      isSelected 
-                        ? 'bg-[#C2F3E1] text-black border-2 border-[#76D7B1]' 
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all ${isSelected
+                        ? 'bg-[#C2F3E1] text-black border-2 border-[#76D7B1]'
                         : 'bg-white text-gray-500 border border-gray-200/60 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     {n}
                   </button>
@@ -238,9 +242,8 @@ useEffect(() => {
                       key={m}
                       type="button"
                       onClick={() => { setMatiere(m); setOpenMatiere(false); }}
-                      className={`w-full text-left p-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-colors ${
-                        isSelected ? 'bg-[#C2F3E1]/50 text-black font-black' : 'hover:bg-gray-50 text-gray-600'
-                      }`}
+                      className={`w-full text-left p-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-colors ${isSelected ? 'bg-[#C2F3E1]/50 text-black font-black' : 'hover:bg-gray-50 text-gray-600'
+                        }`}
                     >
                       <Icon size={14} className={isSelected ? 'text-black' : 'text-gray-400'} />
                       <span>{m}</span>
@@ -273,9 +276,8 @@ useEffect(() => {
                       key={ch}
                       type="button"
                       onClick={() => { setChapitre(ch); setOpenChapitre(false); }}
-                      className={`w-full text-left p-3 rounded-xl text-xs font-bold transition-colors block truncate ${
-                        isSelected ? 'bg-[#C2F3E1]/50 text-black font-black' : 'hover:bg-gray-50 text-gray-600'
-                      }`}
+                      className={`w-full text-left p-3 rounded-xl text-xs font-bold transition-colors block truncate ${isSelected ? 'bg-[#C2F3E1]/50 text-black font-black' : 'hover:bg-gray-50 text-gray-600'
+                        }`}
                     >
                       {ch}
                     </button>
