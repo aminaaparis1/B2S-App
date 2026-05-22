@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../src/lib/supabase";
-import { ArrowLeft, Calendar, AlignLeft, FileText, Download, MessageSquare, Save } from "lucide-react";
+import { ArrowLeft, Calendar, AlignLeft, FileText, ExternalLink, MessageSquare, Save } from "lucide-react";
 
 export default function DevoirDetails() {
   const { id } = useParams();
@@ -10,9 +10,7 @@ export default function DevoirDetails() {
   const [devoir, setDevoir] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-
   const [canEditComment, setCanEditComment] = useState(false); 
-  
   const [commentaire, setCommentaire] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -20,26 +18,31 @@ export default function DevoirDetails() {
     const fetchDetails = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
         
-  
-        const { data: profile } = await supabase.from("profiles").select("role").eq("id", user?.id).single();
+        const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
         const role = profile?.role?.toLowerCase();
         
         setCanEditComment(role === "benevole" || role === "admin" || role === "parent");
 
-
+        // Récupération globale du devoir et de ses fichiers liés
         const { data, error } = await supabase
           .from("devoirs")
           .select(`*, fichiers (*)`)
           .eq("id", id)
           .single();
 
+        if (error) {
+          console.error("❌ Erreur lors de la récupération du devoir :", error);
+        }
+
         if (data) {
+          console.log("📄 Données reçues du devoir :", data);
           setDevoir(data);
           setCommentaire(data.commentaire_benevole || "");
         }
       } catch (err) {
-        console.error(err);
+        console.error("❌ Crash fetchDetails :", err);
       } finally {
         setLoading(false);
       }
@@ -59,6 +62,11 @@ export default function DevoirDetails() {
       alert("Note mise à jour !");
     }
     setIsSaving(false);
+  };
+
+  // Helper pour vérifier si le fichier est une image
+  const isImage = (filename: string) => {
+    return /\.(jpg|jpeg|png|webp|gif)$/i.test(filename);
   };
 
   return (
@@ -131,17 +139,46 @@ export default function DevoirDetails() {
           )}
         </div>
 
-        {/* Section Fichier */}
-        {!loading && devoir?.fichiers?.length > 0 && (
+        {/* Section Fichier Corrigée */}
+        {!loading && devoir?.fichiers && devoir.fichiers.length > 0 && (
           <div className="mt-4">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">Pièce jointe</label>
-            <a href={devoir.fichiers[0].url_storage} target="_blank" rel="noreferrer" className="flex items-center justify-between bg-white p-3 rounded-2xl border-2 border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="bg-gray-400 p-2 rounded-xl"><FileText className="w-4 h-4" /></div>
-                <p className="text-[12px] font-black text-gray-400 ml-2 mb-2 block">{devoir.fichiers[0].nom_fichier}</p>
-              </div>
-              <Download className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block" />
-            </a>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">
+              Pièce jointe ({devoir.fichiers.length})
+            </label>
+            
+            <div className="space-y-3">
+              {devoir.fichiers.map((fichier: any) => (
+                <div key={fichier.id} className="bg-gray-50 rounded-3xl border-2 border-gray-100 p-4">
+                  {/* Si c'est une image, on affiche un aperçu miniature */}
+                  {isImage(fichier.nom_fichier) && (
+                    <div className="mb-3 overflow-hidden rounded-2xl border bg-white max-h-48 flex items-center justify-center">
+                      <img 
+                        src={fichier.url_storage} 
+                        alt={fichier.nom_fichier} 
+                        className="w-full h-full object-contain max-h-47"
+                      />
+                    </div>
+                  )}
+
+                  <a 
+                    href={fichier.url_storage} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="flex items-center justify-between bg-white p-3 rounded-2xl border border-gray-200 shadow-sm hover:border-black transition-all"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden w-4/5">
+                      <div className="bg-gray-100 p-2 rounded-xl text-gray-500 shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <p className="text-xs font-bold text-gray-700 truncate">
+                        {fichier.nom_fichier}
+                      </p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-gray-400 shrink-0 mr-1" />
+                  </a>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
